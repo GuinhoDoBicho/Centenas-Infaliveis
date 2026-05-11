@@ -28,7 +28,7 @@
             user-select: none;
         }
 
-        /* --- TELA DE LOGIN (FIXED) --- */
+        /* --- TELA DE LOGIN --- */
         #loginOverlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -47,17 +47,11 @@
         }
         
         .login-box input, .btn-login, .btn-teste, .btn-compra-pulsar {
-            width: 100%; 
-            margin-top: 12px; 
-            display: block;
-            font-family: inherit;
+            width: 100%; margin-top: 12px; display: block; font-family: inherit;
         }
 
         .login-box input {
-            font-size: 1.1rem;
-            padding: 10px;
-            border: 2px solid black;
-            text-align: center;
+            font-size: 1.1rem; padding: 10px; border: 2px solid black; text-align: center;
         }
 
         /* --- CABEÇALHO --- */
@@ -157,20 +151,16 @@
     <div id="loginOverlay">
         <div class="login-box">
             <h2 style="margin: 0 0 10px 0;">ACESSO RESTRITO</h2>
-            
             <div id="msgBloqueio" style="display:none;">
                 <h3 style="color:red; margin: 10px 0;">LIMITE DE TESTE ATINGIDO!</h3>
                 <p style="font-size: 0.9rem; margin-bottom: 5px;">Adquira a versão completa abaixo:</p>
             </div>
-
             <div id="areaLogin">
                 <p style="font-size: 0.9rem; margin: 5px 0;">Digite a senha para acesso completo:</p>
                 <input type="password" id="senhaInput" placeholder="Senha">
                 <button class="btn btn-login" onclick="verificarSenha()">ENTRAR</button>
-                
                 <button class="btn btn-teste" id="btnTeste" onclick="acessoTeste()">TESTE GRÁTIS (<span id="contagemTeste">3</span>)</button>
             </div>
-
             <a href="https://mpago.la/12NtDeu" target="_blank" class="btn-compra-pulsar">COMPRA VERSÃO COMPLETA</a>
         </div>
     </div>
@@ -233,6 +223,7 @@
     <script>
         const SENHA_CORRETA = "CENTENAS1NFAL1VE1S";
         let modoTesteAtivo = false;
+        let centenasAtuais = []; // Variável global para armazenar as centenas
 
         const dadosBicho = {
             1: {nome: "Avestruz", dezenas: [1, 2, 3, 4]}, 2: {nome: "Águia", dezenas: [5, 6, 7, 8]},
@@ -251,21 +242,17 @@
         };
 
         window.onload = () => {
-            if (localStorage.getItem('acessoPremium') === 'true') { 
-                liberarSite(false); 
-            } else { 
-                verificarStatusTeste(); 
-            }
+            if (localStorage.getItem('acessoPremium') === 'true') { liberarSite(false); }
+            else { verificarStatusTeste(); }
             popularGrupos();
         };
 
         function verificarStatusTeste() {
             let usos = parseInt(localStorage.getItem('contagemTeste') || 0);
             document.getElementById('contagemTeste').innerText = Math.max(0, 3 - usos);
-            
             if (usos >= 3) {
-                document.getElementById('btnTeste').style.display = 'none'; // Some o botão teste
-                document.getElementById('msgBloqueio').style.display = 'block'; // Mostra aviso
+                document.getElementById('btnTeste').style.display = 'none';
+                document.getElementById('msgBloqueio').style.display = 'block';
             }
         }
 
@@ -307,17 +294,21 @@
             const grupo = document.getElementById('selectGrupo').value;
             const grid = document.getElementById('gridCentenas');
             grid.innerHTML = "";
+            centenasAtuais = []; // Limpa a lista atual
+
             if (!grupo) { document.getElementById('nomeBicho').innerText = "-"; return; }
+            
             const info = dadosBicho[grupo];
             document.getElementById('nomeBicho').innerText = info.nome;
-            let tempCentenas = [];
+            
             for (let dez of info.dezenas) {
                 for (let i = 0; i <= 9; i++) {
-                    tempCentenas.push(i.toString() + dez.toString().padStart(2, '0'));
+                    centenasAtuais.push(i.toString() + dez.toString().padStart(2, '0'));
                 }
             }
-            tempCentenas.sort();
-            let lista = modoTesteAtivo ? tempCentenas.slice(0, 20) : tempCentenas;
+            centenasAtuais.sort();
+
+            let lista = modoTesteAtivo ? centenasAtuais.slice(0, 20) : centenasAtuais;
             lista.forEach(c => {
                 let div = document.createElement('div');
                 div.className = 'centena-item'; div.id = 'c-' + c; div.innerText = c;
@@ -333,10 +324,28 @@
         }
 
         function compartilhar() {
+            if (centenasAtuais.length === 0) {
+                alert("Por favor, selecione um grupo primeiro!");
+                return;
+            }
+
             const grupo = document.getElementById('selectGrupo').value;
-            const texto = `Centenas do Guinho - Grupo ${grupo}:\n40 Centenas Geradas com Sucesso!`;
-            if (navigator.share) navigator.share({ title: 'Centenas do Guinho', text: texto });
-            else { navigator.clipboard.writeText(texto); alert("Copiado!"); }
+            const nomeBicho = document.getElementById('nomeBicho').innerText;
+            
+            let mensagem = `*CENTENAS DO GUINHO*\nGRUPO: ${grupo} (${nomeBicho})\n\n`;
+
+            // Lógica de agrupamento de 10 em 10
+            for (let i = 0; i < centenasAtuais.length; i += 10) {
+                let linha = centenasAtuais.slice(i, i + 10);
+                mensagem += linha.join(' | ') + '\n';
+            }
+
+            if (navigator.share) {
+                navigator.share({ title: 'Centenas do Guinho', text: mensagem });
+            } else {
+                navigator.clipboard.writeText(mensagem);
+                alert("Combinações copiadas no formato 10x10!");
+            }
         }
 
         document.onkeydown = (e) => {
